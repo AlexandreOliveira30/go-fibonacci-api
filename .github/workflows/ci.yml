@@ -14,7 +14,10 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/go-fibonacci-api
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/go-fibonacci-api 
+      SSH_USERNAME: "student"
+      PORT_NUMBER: "8080"
+      EC2_HOST: 3.67.201.62
 
     outputs:
       SHORT_SHA: ${{ steps.vars.outputs.SHORT_SHA }}
@@ -65,7 +68,7 @@ jobs:
 
       - name: Deploy container
         run: |
-          PORT="8080"
+          PORT=${PORT_NUMBER}
           sshpass -p "${{ secrets.STUDENT_PASSWORD }}" \
             ssh -o StrictHostKeyChecking=no \
                 "${SSH_USERNAME}@${EC2_HOST}" \
