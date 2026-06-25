@@ -59,3 +59,28 @@ jobs:
 
       - name: Push Docker image
         run: docker push $IMAGE_NAME:${{ steps.vars.outputs.SHORT_SHA }}
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Deploy container
+        run: |
+          PORT="8080"
+          sshpass -p "${{ secrets.STUDENT_PASSWORD }}" \
+            ssh -o StrictHostKeyChecking=no \
+                "${SSH_USERNAME}@${EC2_HOST}" \
+                "IMAGE_REF='${IMAGE_REF}' PORT='${PORT}' bash -s" << 'EOF'
+          set -euo pipefail
+
+          echo "Pulling image: ${IMAGE_REF}"
+          docker pull "${IMAGE_REF}"
+
+          echo "Stopping any container publishing port ${PORT} (if any)..."
+          docker ps -q --filter "publish=${PORT}" | xargs -r docker stop
+
+          echo "Running container on host port ${PORT} -> container 8080..."
+          docker run -d -p "${PORT}:8080" "${IMAGE_REF}"
+
+          echo "Current containers:"
+          docker ps --format 'table {{.ID}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}'
+          EOF
